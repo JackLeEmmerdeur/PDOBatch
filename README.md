@@ -19,7 +19,7 @@ for($i=0; $i<10000; $i++)
 {
   // This continously collects inserts till 500 rows are
   // reached and only then does the real db-execute 
-  $bd->addBatch(["foo$i", "bar$i", "baz$i"]);
+  $bi->addBatch(["foo$i", "bar$i", "baz$i"]);
 }
 
 // This has to be done always at the end to insert remaining
