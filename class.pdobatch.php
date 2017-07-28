@@ -40,22 +40,22 @@
 			/**
 			 * Constructor
 			 *
-			 * @param PDO $db 						An initialized PDO-Instance
-			 * @param string $table 				The name of the table you want to UPDATE
-			 * @param string[] $updatecolumns 		The name of columns to update.
-			 * 										Has to be the same array-length as $updatevalues.
-			 * 											SET $updatecolumns[0]=?,$updatecolumns[1]=?...
-			 * @param object[] $updatevalues 		The values of the columns to update.
-			 * 										Has to be the same array-length as $updatecolumns.
-			 * 											SET columnname1=$updatevalues[0], columnname2=$updatevalues[1]...
-			 * @param string[] $conditioncolumns	The name of condition-columns
-			 * 											WHERE ($conditioncolumns[0]=? AND/OR $conditioncolumns[1]=?...) OR
-			 * 												  ($conditioncolumns[0]=? AND/OR $conditioncolumns[1]=?...)
-			 * 										Has to be the same array-length as the parameter for $this->addBatch()
-			 * @param $maxbatch						The maximum number of rows to UPDATE per batch
-			 * @param  $stmtDriverOptions			Driver options to pass to the prepared statement
-			 * 										see http://php.net/manual/de/pdo.prepare.php
-			 * @throws \Exception 					If some parameters are invalid
+			 * @param PDO $db                       An initialized PDO-Instance
+			 * @param string $table                 The name of the table you want to UPDATE
+			 * @param string[] $updatecolumns       The name of columns to update.
+			 *                                      Has to be the same array-length as $updatevalues.
+			 *                                          SET $updatecolumns[0]=?,$updatecolumns[1]=?...
+			 * @param object[] $updatevalues        The values of the columns to update.
+			 *                                      Has to be the same array-length as $updatecolumns.
+			 *                                          SET columnname1=$updatevalues[0], columnname2=$updatevalues[1]...
+			 * @param string[] $conditioncolumns    The name of condition-columns
+			 *                                          WHERE ($conditioncolumns[0]=? AND/OR $conditioncolumns[1]=?...) OR
+			 *                                                ($conditioncolumns[0]=? AND/OR $conditioncolumns[1]=?...)
+			 *                                      Has to be the same array-length as the parameter for $this->addBatch()
+			 * @param $maxbatch                     The maximum number of rows to UPDATE per batch
+			 * @param  $stmtDriverOptions           Driver options to pass to the prepared statement
+			 *                                      see http://php.net/manual/de/pdo.prepare.php
+			 * @throws \Exception                   If some parameters are invalid
 			 */
 			function __construct($db, $table, $updatecolumns, $updatevalues, $conditioncolumns, $maxbatch, $stmtDriverOptions = NULL)
 			{
@@ -99,13 +99,13 @@
 			 * Adds an UPDATE batch-item for a single row-condition.
 			 * If $this->maxbatch (see constructor) is reached it executes the collected batch-items.
 			 *
-			 * @param object[] $values 				The values of the row-condition
-			 * 											WHERE (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...) OR
-			 * 											  	  (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...)
-			 * @param string $conditionoperator		The operator with which to concat single row conditions (AND or OR, default=AND)
-			 * @return boolean 						TRUE if an execution of collected batch items was successful
-			 * 										or if the passed batch-item could be added otherwise FALSE
-			 * @throws \Exception 					If a method-parameter was invalid or PDO throws out
+			 * @param object[] $values              The values of the row-condition
+			 *                                          WHERE (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...) OR
+			 *                                                (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...)
+			 * @param string $conditionoperator     The operator with which to concat single row conditions (AND or OR, default=AND)
+			 * @return boolean                      TRUE if an execution of collected batch items was successful
+			 *                                      or if the passed batch-item could be added otherwise FALSE
+			 * @throws \Exception                   If a method-parameter was invalid or PDO throws out
 			 */
 			public function addBatch($values, $conditionoperator="AND")
 			{
@@ -201,16 +201,16 @@
 			/**
 			 * Constructor
 			 *
-			 * @param PDO $db						An initialized PDO-Instance
-			 * @param string $table					The name of the table you want to DELETE from
-			 * @param string[] $columnnames			The name of the columns that will be used for every delete-criterium
-			 * 											DELETE FROM x
-			 * 											WHERE ($columnnames[0]=? AND/OR $columnnames[1]=?) OR
-			 * 												  ($columnnames[0]=? AND/OR $columnnames[1]=?)
-			 * @param integer $maxbatch				The maximum number of rows to DELETE per batch
-			 * @param object[] $stmtDriverOptions	Driver options to pass to the prepared statement
-			 * 										see http://php.net/manual/de/pdo.prepare.php
-			 * @throws \Exception 					If some parameters are invalid
+			 * @param PDO $db                       An initialized PDO-Instance
+			 * @param string $table                 The name of the table you want to DELETE from
+			 * @param string[] $columnnames         The name of the columns that will be used for every delete-criterium
+			 *                                          DELETE FROM x
+			 *                                          WHERE ($columnnames[0]=? AND/OR $columnnames[1]=?) OR
+			 *                                                ($columnnames[0]=? AND/OR $columnnames[1]=?)
+			 * @param integer $maxbatch             The maximum number of rows to DELETE per batch
+			 * @param object[] $stmtDriverOptions   Driver options to pass to the prepared statement
+			 *                                      see http://php.net/manual/de/pdo.prepare.php
+			 * @throws \Exception                   If some parameters are invalid
 			 */
 			function __construct($db, $table, $columnnames, $maxbatch, $stmtDriverOptions = NULL)
 			{
@@ -240,13 +240,13 @@
 			/**
 			 * Adds an DELETE batch-item for a single row-condition.
 			 * If $this->maxbatch (see constructor) is reached it executes the collected batch-items.
-			 * @param object[] $values 				The values of the row-condition
-			 * 										WHERE (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...) OR
-			 * 											  (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...)
-			 * @param string $conditionoperator		The operator with which to concat single row conditions (AND or OR, default=AND)
-			 * @return boolean 						TRUE if an execution of collected batch items was successful or
-			 * 										if the passed batch-item could be added otherwise FALSE
-			 * @throws \Exception 					If PDO throws out
+			 * @param object[] $values              The values of the row-condition
+			 *                                          WHERE (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...) OR
+			 *                                                (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...)
+			 * @param string $conditionoperator     The operator with which to concat single row conditions (AND or OR, default=AND)
+			 * @return boolean                      TRUE if an execution of collected batch items was successful or
+			 *                                      if the passed batch-item could be added otherwise FALSE
+			 * @throws \Exception                   If PDO throws out
 			 */
 			public function addBatch($values, $conditionoperator="OR")
 			{
@@ -320,12 +320,12 @@
 			/**
 			 * Constructor
 			 *
-			 * @param PDO $db 						An initialized PDO-Instance
-			 * @param string $table 				The name of the table you want to INSERT into
-			 * @param string[] $columnnames			The names of the columns you want to INSERT values for
-			 * @param integer $maxbatch				The maximum number of rows to update per batch
-			 * @param object[] $stmtDriverOptions	Driver options to pass to the prepared statement
-			 * 										see http://php.net/manual/de/pdo.prepare.php
+			 * @param PDO $db                       An initialized PDO-Instance
+			 * @param string $table                 The name of the table you want to INSERT into
+			 * @param string[] $columnnames         The names of the columns you want to INSERT values for
+			 * @param integer $maxbatch             The maximum number of rows to update per batch
+			 * @param object[] $stmtDriverOptions   Driver options to pass to the prepared statement
+			 *                                      see http://php.net/manual/de/pdo.prepare.php
 			 * @throws \Exception
 			 */
 			function __construct($db, $table, $columnnames, $maxbatch, $stmtDriverOptions = NULL)
@@ -362,11 +362,11 @@
 			/**
 			 * Adds an INSERT batch-item for a single row.
 			 * If $this->maxbatch (see constructor) is reached it executes the collected batch-items.
-			 * @param object[] $values		The values you want to INSERT
-			 * 									INSERT INTO x(a,b,c) VALUES($values[0],$values[1],$values[2])
-			 * @param null $conditions		This parameter is not used, therefore can be ommitted
-			 * @return bool 				TRUE if an execution of collected batch items was successful or
-			 * 								if the passed batch-item could be added otherwise FALSE
+			 * @param object[] $values      The values you want to INSERT
+			 *                                  INSERT INTO x(a,b,c) VALUES($values[0],$values[1],$values[2])
+			 * @param null $conditions      This parameter is not used, therefore can be ommitted
+			 * @return bool                 TRUE if an execution of collected batch items was successful or
+			 *                              if the passed batch-item could be added otherwise FALSE
 			 */
 			public function addBatch($values, $conditions=NULL)
 			{
