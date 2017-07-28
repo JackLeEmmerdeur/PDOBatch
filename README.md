@@ -22,7 +22,7 @@ for($i=0; $i<10000; $i++)
   $bd->addBatch(["foo$i", "bar$i", "baz$i"]);
 }
 
-// This has to be done alway at the end to insert remaining
+// This has to be done always at the end to insert remaining
 // records. In our case its 10000 % 300 which is 100 records
 // remaining to insert.
 $bi->finalize();
