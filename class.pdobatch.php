@@ -13,10 +13,15 @@
 
 		interface IPDOBatch
 		{
-			public function addBatch($values);
+			public function addBatch($values, $conditionoperator=NULL);
 			public function finalize();
 		}
 
+		/**
+		 * A class for executing prepared UPDATE statements on multiple rows
+		 * with different criterias in a faster way than with single executes
+		 * @package PDOBatch
+		 */
 		class PDOBatchUpdater implements IPDOBatch
 		{
 			private $db;
@@ -30,9 +35,29 @@
 			private $completeBatchCount = 0;
 			private $conditioncolumncount;
 			private $conditioncolumns;
-			private $conditionstatement;
+			private $conditionoperator;
 
-			function __construct($db, $table, $updatecolumns, $updatevalues, $conditioncolumns, $conditionstatement, $maxbatch, $stmtDriverOptions = NULL)
+			/**
+			 * Constructor
+			 *
+			 * @param PDO $db 						An initialized PDO-Instance
+			 * @param string $table 				The name of the table you want to UPDATE
+			 * @param string[] $updatecolumns 		The name of columns to update.
+			 * 										Has to be the same array-length as $updatevalues.
+			 * 											SET $updatecolumns[0]=?,$updatecolumns[1]=?...
+			 * @param object[] $updatevalues 		The values of the columns to update.
+			 * 										Has to be the same array-length as $updatecolumns.
+			 * 											SET columnname1=$updatevalues[0], columnname2=$updatevalues[1]...
+			 * @param string[] $conditioncolumns	The name of condition-columns
+			 * 											WHERE ($conditioncolumns[0]=? AND/OR $conditioncolumns[1]=?...) OR
+			 * 												  ($conditioncolumns[0]=? AND/OR $conditioncolumns[1]=?...)
+			 * 										Has to be the same array-length as the parameter for $this->addBatch()
+			 * @param $maxbatch						The maximum number of rows to UPDATE per batch
+			 * @param  $stmtDriverOptions			Driver options to pass to the prepared statement
+			 * 										see http://php.net/manual/de/pdo.prepare.php
+			 * @throws \Exception 					If some parameters are invalid
+			 */
+			function __construct($db, $table, $updatecolumns, $updatevalues, $conditioncolumns, $maxbatch, $stmtDriverOptions = NULL)
 			{
 				if ($db === NULL)
 					throw new \Exception("Parameter db is invalid");
@@ -46,8 +71,6 @@
 					throw new \Exception("Parameter conditioncolumns is not an array");
 				if (!PDOBatchHelpers::isInt($maxbatch) || $maxbatch < 1)
 					throw new \Exception("Parameter maxbatch has to be an int > 0");
-				if (!PDOBatchHelpers::isStr($conditionstatement ) || ($conditionstatement !== "OR" && $conditionstatement != "AND"))
-					throw new \Exception("Parameter conditionstatement is invalid");
 
 				$this->db = $db;
 				$this->maxbatch = $maxbatch;
@@ -56,7 +79,6 @@
 				$this->queryIntro = "UPDATE " . $table . " SET ";
 				$this->conditioncolumncount = count($conditioncolumns);
 				$this->conditioncolumns = $conditioncolumns;
-				$this->conditionstatement = $conditionstatement;
 
 				$updatecolumnstr = "";
 				$i = 0;
@@ -73,8 +95,25 @@
 				}
 			}
 
-			public function addBatch($values)
+			/**
+			 * Adds an UPDATE batch-item for a single row-condition.
+			 * If $this->maxbatch (see constructor) is reached it executes the collected batch-items.
+			 *
+			 * @param object[] $values 				The values of the row-condition
+			 * 											WHERE (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...) OR
+			 * 											  	  (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...)
+			 * @param string $conditionoperator		The operator with which to concat single row conditions (AND or OR, default=AND)
+			 * @return boolean 						TRUE if an execution of collected batch items was successful
+			 * 										or if the passed batch-item could be added otherwise FALSE
+			 * @throws \Exception 					If a method-parameter was invalid or PDO throws out
+			 */
+			public function addBatch($values, $conditionoperator="AND")
 			{
+				if (!PDOBatchHelpers::isStr($conditionoperator ) || (strtolower($conditionoperator) !== "or" && strtolower($conditionoperator) != "and"))
+					throw new \Exception("Parameter conditionstatement is invalid");
+
+				$this->conditionoperator = $conditionoperator;
+
 				if (PDOBatchHelpers::isEmptyArray($values))
 					throw new \Exception("values-array is empty");
 
@@ -88,7 +127,7 @@
 				foreach ($values as $value)
 				{
 					array_push($this->queryArray, $value);
-					if ($i > 0) $conditions .= " $this->conditionstatement ";
+					if ($i > 0) $conditions .= " $this->conditionoperator ";
 					$conditions .= $this->conditioncolumns[$i]."=?";
 					$i++;
 				}
@@ -100,6 +139,11 @@
 				return TRUE;
 			}
 
+			/**
+			 * Called everytime a $this->maxbatch is reached within $this->addbatch()
+			 * @return mixed
+			 * @throws \Exception If PDO throws out
+			 */
 			private function execute()
 			{
 				if (!PDOBatchHelpers::isEmptyArray($this->stmtDriverOptions))
@@ -111,6 +155,9 @@
 				return $success;
 			}
 
+			/**
+			 * Called after every PDO-Statement execution
+			 */
 			private function reset()
 			{
 				$this->currentBatchCount = 0;
@@ -123,6 +170,10 @@
 				}
 			}
 
+			/**
+			 * This has to be called finally after all $this->addBatch() calls have been made,
+			 * to execute the statements for the leftover batch-items
+			 */
 			public function finalize()
 			{
 				if ($this->completeBatchCount % $this->maxbatch != 0)
@@ -131,6 +182,10 @@
 			}
 		}
 
+		/**
+		 * A class for executing prepared DELETE statements for rows with different criterias
+		 * @package PDOBatch
+		 */
 		class PDOBatchDeleter implements IPDOBatch
 		{
 			private $db;
@@ -143,6 +198,20 @@
 			private $currentBatchCount = 0;
 			private $completeBatchCount = 0;
 
+			/**
+			 * Constructor
+			 *
+			 * @param PDO $db						An initialized PDO-Instance
+			 * @param string $table					The name of the table you want to DELETE from
+			 * @param string[] $columnnames			The name of the columns that will be used for every delete-criterium
+			 * 											DELETE FROM x
+			 * 											WHERE ($columnnames[0]=? AND/OR $columnnames[1]=?) OR
+			 * 												  ($columnnames[0]=? AND/OR $columnnames[1]=?)
+			 * @param integer $maxbatch				The maximum number of rows to DELETE per batch
+			 * @param object[] $stmtDriverOptions	Driver options to pass to the prepared statement
+			 * 										see http://php.net/manual/de/pdo.prepare.php
+			 * @throws \Exception 					If some parameters are invalid
+			 */
 			function __construct($db, $table, $columnnames, $maxbatch, $stmtDriverOptions = NULL)
 			{
 				if ($db === NULL)
@@ -168,13 +237,24 @@
 				$this->queryConditions = $conditions;
 			}
 
-			public function addBatch($values)
+			/**
+			 * Adds an DELETE batch-item for a single row-condition.
+			 * If $this->maxbatch (see constructor) is reached it executes the collected batch-items.
+			 * @param object[] $values 				The values of the row-condition
+			 * 										WHERE (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...) OR
+			 * 											  (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...)
+			 * @param string $conditionoperator		The operator with which to concat single row conditions (AND or OR, default=AND)
+			 * @return boolean 						TRUE if an execution of collected batch items was successful or
+			 * 										if the passed batch-item could be added otherwise FALSE
+			 * @throws \Exception 					If PDO throws out
+			 */
+			public function addBatch($values, $conditionoperator="OR")
 			{
 				foreach ($values as $value)
 				{
 					array_push($this->queryArray, $value);
 				}
-				$this->batchQueryConditions .= (($this->currentBatchCount > 0) ? " OR " : "") . $this->queryConditions;
+				$this->batchQueryConditions .= (($this->currentBatchCount > 0) ? " $conditionoperator " : "") . $this->queryConditions;
 				$this->currentBatchCount++;
 				$this->completeBatchCount++;
 				if ($this->currentBatchCount === $this->maxbatch)
@@ -182,6 +262,11 @@
 				return TRUE;
 			}
 
+			/**
+			 * Called everytime a $this->maxbatch is reached within $this->addbatch()
+			 * @return mixed
+			 * @throws \Exception If PDO throws out
+			 */
 			private function execute()
 			{
 				if (!PDOBatchHelpers::isEmptyArray($this->stmtDriverOptions))
@@ -193,6 +278,9 @@
 				return $success;
 			}
 
+			/**
+			 * Called after every PDO-Statement execution
+			 */
 			private function reset()
 			{
 				$this->currentBatchCount = 0;
@@ -201,6 +289,10 @@
 				$this->queryArray = [];
 			}
 
+			/**
+			 * This has to be called finally after all $this->addBatch() calls have been made,
+			 * to execute the statements for the leftover batch-items
+			 */
 			public function finalize()
 			{
 				if ($this->completeBatchCount % $this->maxbatch != 0)
@@ -209,6 +301,10 @@
 			}
 		}
 
+		/**
+		 * A class for executing prepared INSERT statements for multiple rows
+		 * @package PDOBatch
+		 */
 		class PDOBatchInserter implements IPDOBatch
 		{
 			private $db;
@@ -221,6 +317,17 @@
 			private $currentBatchCount = 0;
 			private $completeBatchCount = 0;
 
+			/**
+			 * Constructor
+			 *
+			 * @param PDO $db 						An initialized PDO-Instance
+			 * @param string $table 				The name of the table you want to INSERT into
+			 * @param string[] $columnnames			The names of the columns you want to INSERT values for
+			 * @param integer $maxbatch				The maximum number of rows to update per batch
+			 * @param object[] $stmtDriverOptions	Driver options to pass to the prepared statement
+			 * 										see http://php.net/manual/de/pdo.prepare.php
+			 * @throws \Exception
+			 */
 			function __construct($db, $table, $columnnames, $maxbatch, $stmtDriverOptions = NULL)
 			{
 				if ($db === NULL)
@@ -252,7 +359,16 @@
 				$this->reset();
 			}
 
-			public function addBatch($values)
+			/**
+			 * Adds an INSERT batch-item for a single row.
+			 * If $this->maxbatch (see constructor) is reached it executes the collected batch-items.
+			 * @param object[] $values		The values you want to INSERT
+			 * 									INSERT INTO x(a,b,c) VALUES($values[0],$values[1],$values[2])
+			 * @param null $conditions		This parameter is not used, therefore can be ommitted
+			 * @return bool 				TRUE if an execution of collected batch items was successful or
+			 * 								if the passed batch-item could be added otherwise FALSE
+			 */
+			public function addBatch($values, $conditions=NULL)
 			{
 				foreach ($values as $value)
 				{
@@ -266,6 +382,11 @@
 				return TRUE;
 			}
 
+			/**
+			 * Called everytime a $this->maxbatch is reached within $this->addbatch()
+			 * @return boolean
+			 * @throws \Exception If PDO throws out
+			 */
 			private function execute()
 			{
 				if (!PDOBatchHelpers::isEmptyArray($this->stmtDriverOptions))
@@ -278,6 +399,9 @@
 				return $success;
 			}
 
+			/**
+			 * Called after every PDO-Statement execution
+			 */
 			private function reset()
 			{
 				$this->currentBatchCount = 0;
@@ -286,6 +410,10 @@
 				$this->queryArray = [];
 			}
 
+			/**
+			 * This has to be called finally after all $this->addBatch() calls have been made,
+			 * to execute the statements for the leftover batch-items
+			 */
 			public function finalize()
 			{
 				if ($this->completeBatchCount % $this->maxbatch != 0)
@@ -294,3 +422,4 @@
 			}
 		}
 	}
+?>
