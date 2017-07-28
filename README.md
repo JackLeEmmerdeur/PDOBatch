@@ -46,7 +46,6 @@ $bu = new PDOBatch\PDOBatchUpdater(
 // AND email matches baz1-baz5000 
 for($i=0; $i<5000; $i++)
 {
-  // update the first $ucount rows 
   $bu->addBatch(["foo$i","baz$i"], "AND");
 }
 
@@ -60,7 +59,6 @@ $bu->finalize();
 $bd = new PDOBatch\PDOBatchDeleter($db, "users", ["surname"], 500);
 for($i=0; $i<10000; $i++)
 {
-  // delete every 3rd row
   if ($i % 3 == 0)
     $bd->addBatch(["foo$i"]);
 }
