@@ -208,6 +208,10 @@
 			 *                                          WHERE ($columnnames[0]=? AND/OR $columnnames[1]=?) OR
 			 *                                                ($columnnames[0]=? AND/OR $columnnames[1]=?)
 			 * @param integer $maxbatch             The maximum number of rows to DELETE per batch
+			 * @param string $conditionoperato      The conditionoperator inside the conditions
+			 *                                          DELETE FROM x
+			 *                                                WHERE (columnname1=? $conditionoperator columnname2=?) OR
+			 *                                                (columnname1=? $conditionoperator columnname2=?)
 			 * @param object[] $stmtDriverOptions   Driver options to pass to the prepared statement
 			 *                                      see http://php.net/manual/de/pdo.prepare.php
 			 * @throws \Exception                   If some parameters are invalid
@@ -230,31 +234,31 @@
 				$i = 0;
 				foreach ($columnnames as $columnname)
 				{
-					if ($i > 0) $conditions .= ",";
+					if ($i > 0) $conditions .= " $conditionoperator ";
 					$conditions .= "$columnname=?";
 					$i++;
 				}
 				$this->queryConditions = $conditions;
 			}
-
+			
 			/**
 			 * Adds an DELETE batch-item for a single row-condition.
 			 * If $this->maxbatch (see constructor) is reached it executes the collected batch-items.
 			 * @param object[] $values              The values of the row-condition
 			 *                                          WHERE (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...) OR
 			 *                                                (conditioncolum0=$value[0] AND/OR conditioncolumn1=$value[1]...)
-			 * @param string $conditionoperator     The operator with which to concat single row conditions (AND or OR, default=AND)
+			 * @param string $conditionoperator     Not used here
 			 * @return boolean                      TRUE if an execution of collected batch items was successful or
 			 *                                      if the passed batch-item could be added otherwise FALSE
 			 * @throws \Exception                   If PDO throws out
 			 */
-			public function addBatch($values, $conditionoperator="OR")
+			public function addBatch($values, $conditionoperator=NULL)
 			{
 				foreach ($values as $value)
 				{
 					array_push($this->queryArray, $value);
 				}
-				$this->batchQueryConditions .= (($this->currentBatchCount > 0) ? " $conditionoperator " : "") . $this->queryConditions;
+				$this->batchQueryConditions .= (($this->currentBatchCount > 0) ? " OR " : "") . $this->queryConditions;
 				$this->currentBatchCount++;
 				$this->completeBatchCount++;
 				if ($this->currentBatchCount === $this->maxbatch)
