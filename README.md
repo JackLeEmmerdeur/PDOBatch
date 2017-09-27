@@ -13,49 +13,49 @@ $db = new PDO
 // ================================================================
 // Create a batch inserter for the table users for many records
 // of which you want to set the columns surname, lastname and email
-$bi = new PDOBatch\PDOBatchInserter($db, "users", ["surname","lastname","email"], 500);
+$bi = new PDOBatch\PDOBatchInserter($db, "users", ["surname","lastname","email"], 600);
 
 for($i=0; $i<10000; $i++)
 {
-  // This continously collects inserts till 500 rows are
-  // reached and only then does the real db-execute 
+  // This only does a real db-insert on every collected 600 records,
+  // emptys the collection subsequently, before restarting to collect 
   $bi->addBatch(["foo$i", "bar$i", "baz$i"]);
 }
 
 // This has to be done always at the end to insert remaining
-// records. In our case its 10000 % 300 which is 100 records
+// records. In our case its 10000 % 600 which results in 400 records
 // remaining to insert.
 $bi->finalize();
 
 
 // ================================================================
-// Create a batch updater for the table users
-// Of every row the active-column will be set to 1
-// where every surname- and email-column matches the criterias
-// passed to addBatch below
+// Create a batch updater for the table users.
+// In every row the column "subscribed" will be set to value 1 if 
+// surname- and email-column match the criterias passed to the
+// addBatch() method further down.
 $bu = new PDOBatch\PDOBatchUpdater(
   $db,
   "users",
-  ["active"],
+  ["subscribed"],
   [1],
   ["surname", "email"],
-  500
+  700
 );
 
-// Only set the column active to 1 if surname matches foo0-foo5000
+// Only set the column "subscribed" to 1 if surname matches foo0-foo5000
 // AND email matches baz1-baz5000 
 for($i=0; $i<5000; $i++)
 {
   $bu->addBatch(["foo$i","baz$i"], "AND");
 }
 
-// Update remaining records
+// Update the remaining 100 records (5000 % 700)
 $bu->finalize();
 
 
 // ================================================================
-// Create a batch deleter for the table users
-// Delete every user with surname index is dividable by 3
+// Create a batch deleter for the table users.
+// Delete all users whose surname index is dividable by 3
 $bd = new PDOBatch\PDOBatchDeleter($db, "users", ["surname"], 500);
 for($i=0; $i<10000; $i++)
 {
