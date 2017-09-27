@@ -4,6 +4,7 @@ Three classes for batch-processing of CUD-Operations with PDOs prepared statemen
 ## Usage
 ```php
 require_once("class.pdobatch.php");
+
 $db = new PDO
 (
   "mysql:host=127.0.0.1;dbname=test;", "root", "password",
@@ -11,14 +12,16 @@ $db = new PDO
 );
 
 // ================================================================
-// Create a batch inserter for the table users for many records
-// of which you want to set the columns surname, lastname and email
+// Create a batch inserter for the table users for many records of
+// which you want to set the columns "surname", "lastname" 
+// and "email".
 $bi = new PDOBatch\PDOBatchInserter($db, "users", ["surname","lastname","email"], 600);
 
 for($i=0; $i<10000; $i++)
 {
   // This only does a real db-insert on every collected 600 records,
-  // emptys the collection subsequently, before restarting to collect 
+  // empties the collection subsequently, before restarting to
+  // collect again.
   $bi->addBatch(["foo$i", "bar$i", "baz$i"]);
 }
 
@@ -30,9 +33,9 @@ $bi->finalize();
 
 // ================================================================
 // Create a batch updater for the table users.
-// In every row the column "subscribed" will be set to value 1 if 
-// surname- and email-column match the criterias passed to the
-// addBatch() method further down.
+// In every row the column "subscribed" will be set to 1 if the
+// surname- and email-columns match the criterias passed to the
+// addBatch() method further down
 $bu = new PDOBatch\PDOBatchUpdater(
   $db,
   "users",
