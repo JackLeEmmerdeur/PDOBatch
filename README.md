@@ -14,7 +14,7 @@ $db = new PDO
 // ================================================================
 // Create a batch inserter for the table users for many records of
 // which you want to set the columns "surname", "lastname" 
-// and "email".
+// and "email", where every batch will consist of 600 records.
 $bi = new PDOBatch\PDOBatchInserter($db, "users", ["surname","lastname","email"], 600);
 
 for($i=0; $i<10000; $i++)
@@ -35,7 +35,7 @@ $bi->finalize();
 // Create a batch updater for the table users.
 // In every row the column "subscribed" will be set to 1 if the
 // surname- and email-columns match the criterias passed to the
-// addBatch() method further down
+// addBatch() method further down.
 $bu = new PDOBatch\PDOBatchUpdater(
   $db,
   "users",
@@ -46,7 +46,7 @@ $bu = new PDOBatch\PDOBatchUpdater(
 );
 
 // Only set the column "subscribed" to 1 if surname matches foo0-foo5000
-// AND email matches baz1-baz5000 
+// AND email matches baz1-baz5000 .
 for($i=0; $i<5000; $i++)
 {
   $bu->addBatch(["foo$i","baz$i"], "AND");
@@ -58,7 +58,7 @@ $bu->finalize();
 
 // ================================================================
 // Create a batch deleter for the table users.
-// Delete all users whose surname index is dividable by 3
+// Delete all users whose surname index is dividable by 3.
 $bd = new PDOBatch\PDOBatchDeleter($db, "users", ["surname"], 500);
 for($i=0; $i<10000; $i++)
 {
